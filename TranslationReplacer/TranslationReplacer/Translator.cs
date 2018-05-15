@@ -14,7 +14,7 @@ namespace TranslationReplacer
     {
         public string SourceFilePath { get; private set; }
         public string OutputFilePath { get; private set; }
-        public JObject rootJsonObject { get; private set; }
+        public JToken rootJsonObject { get; private set; }
         public JContainer jsonContainer { get; set; }
 
         public Translator(string sourceFilePath, string outputFilePath)
@@ -38,9 +38,10 @@ namespace TranslationReplacer
                 //    string jsonInputString = streamReader.ReadToEnd();
                 //    jsonObject = (JObject)JsonConvert.DeserializeObject(jsonInputString);
                 //}
+
                 using (StreamReader streamReader = File.OpenText(SourceFilePath))
                 {
-                    rootJsonObject = (JObject)JToken.ReadFrom(new JsonTextReader(streamReader));
+                    rootJsonObject = JToken.ReadFrom(new JsonTextReader(streamReader));
                 }
 
             }
@@ -54,8 +55,6 @@ namespace TranslationReplacer
                 Console.WriteLine("Exception found");
                 Console.WriteLine(ex.StackTrace);
             }
-
-            // Console.WriteLine(jsonObject);
         }
 
         private void SaveDataToFile(string outputFilePath)
@@ -89,7 +88,9 @@ namespace TranslationReplacer
             }
 #endif
         }
-
+        /// <summary>
+        /// Read, translate references and save file
+        /// </summary>
         public void TranslateData()
         {
             // Read data from file
@@ -102,72 +103,38 @@ namespace TranslationReplacer
             SaveDataToFile(OutputFilePath);
         }
 
-        private void FindReferencesAndReplace(JObject treeNode)
+
+        /// <summary>
+        /// Finds references and repleace all which need to be changed
+        /// </summary>
+        /// <param name="treeNode"></param>
+        private void FindReferencesAndReplace(JToken treeNode)
         {
-
-            // Find references and repleace all which need to be changed
-            IEnumerator<KeyValuePair<string, JToken>> enumerator = treeNode.GetEnumerator();
-            Console.WriteLine("mam: " + treeNode.Count + " dzieci");
-            Type t = typeof(JValue);
-
-            Console.WriteLine(t);
-
-            if (treeNode.HasValues)
+            if (treeNode.Type == JTokenType.Object)
             {
-                // foreach node findAndReplace
-                while (enumerator.MoveNext())
+                foreach (JProperty child in treeNode.Children<JProperty>())
                 {
-                        JObject currentObject = (JObject)enumerator.Current.Value;
-                        Console.WriteLine("Jestem w : " + enumerator.Current.Key);
-                        FindReferencesAndReplace(currentObject);
+                    FindReferencesAndReplace(child.Value);
+                }
+            }
+            else if (treeNode.Type == JTokenType.String)  // czy zawsze będą tylko stringi?
+            {
+                // check if value is a reference and if its reference find and replace
+                JValue currentJValue = (JValue)treeNode;
+                string currentStringValue = (string)currentJValue.Value;
+
+                if (currentStringValue.StartsWith("@:"))
+                {
+                    Console.WriteLine(currentStringValue);
+                    string translationPath = currentStringValue.Substring(2);
+                    Translation(translationPath);
                 }
             }
             else
             {
-                // check if value is a reference and if its reference find and replace
-                string currentValue = (string)enumerator.Current.Value;
-                if (currentValue.Contains("@:"))
-                {
-                    if (currentValue.StartsWith("@:"))
-                    {
-                        Console.WriteLine(currentValue);
-                        Translation(currentValue);
-                    }
-                }
-                
+                Console.WriteLine("Error, wrong value in JSON file.");
+                return;
             }
-
-            
-
-
-
-
-            //// Translate objects
-            ////Console.WriteLine(jsonObject.Root);
-            ////foreach (JToken token in jsonObject)
-            ////{
-            ////Dictionary<string, JToken>
-            ////}
-
-            //jsonContainer = rootJsonObject;
-            //JEnumerable<JToken> containerChildren = jsonContainer.Children();
-
-
-
-            //Console.WriteLine(rootJsonObject.Count);
-            //JEnumerable<JToken> childrenList = rootJsonObject.Children();
-
-            //IEnumerator<KeyValuePair<string, JToken>> enumerator = rootJsonObject.GetEnumerator();
-            //Console.WriteLine(enumerator.Current);
-
-            //enumerator.MoveNext();
-            //Console.WriteLine(enumerator.Current.Key);
-
-
-
-
-
-
         }
 
         /// <summary>

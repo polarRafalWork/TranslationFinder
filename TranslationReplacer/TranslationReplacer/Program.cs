@@ -12,8 +12,9 @@ namespace TranslationReplacer
         static void Main(string[] args)
         {
 
-            string fileSourcePath = $"C:/Users/rpolar/Desktop/GIT/TranslationFinder/TranslationReplacer/TranslationReplacer/SourceTranslationFiles/locale-de-DE.json";
-            string fileOutputPath = $"C:/Users/rpolar/Desktop/GIT/TranslationFinder/TranslationReplacer/TranslationReplacer/OutputTranslationFiles/locale-de-DE.json";
+            string fileSourcePath = $"C:/Users/polar/source/repos/TranslationFinder/TranslationReplacer/TranslationReplacer/SourceTranslationFiles/locale-de-DE.json";
+            
+            string fileOutputPath = $"C:/Users/polar/source/repos/TranslationFinder/TranslationReplacer/TranslationReplacer/SourceTranslationFiles/locale-de-DE_output.json";
             Translator translator = new Translator(fileSourcePath, fileOutputPath);
             translator.TranslateData();
             
