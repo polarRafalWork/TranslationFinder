@@ -151,7 +151,6 @@ namespace TranslationReplacer
 
             sourceValue.Value = translation;
 
-
 #if DEBUG
             //Console.WriteLine($"After translation: {(JToken)sourceValue.Parent}");
             //Console.WriteLine();
