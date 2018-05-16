@@ -19,7 +19,7 @@ namespace TranslationReplacer
         // FIELDS AND PROPERTIES
         public string SourceFilePath { get; private set; }
         public string OutputFilePath { get; private set; }
-        public JToken rootJsonObject { get; private set; }
+        public JToken RootJsonObject { get; private set; }
         int totalErrors = 0;
 
         // CONSTRUCTORS
@@ -44,12 +44,12 @@ namespace TranslationReplacer
             {
                 using (StreamReader streamReader = File.OpenText(SourceFilePath))
                 {
-                    rootJsonObject = JToken.ReadFrom(new JsonTextReader(streamReader));
+                    RootJsonObject = JToken.ReadFrom(new JsonTextReader(streamReader));
                 }
             }
             catch (IOException ex)
             {
-                Console.WriteLine("IO exception error");
+                Console.WriteLine("IO exception error " + ex.Message);
                 Console.WriteLine(ex.StackTrace);
             }
             catch (Exception ex)
@@ -70,7 +70,7 @@ namespace TranslationReplacer
                 }
                 JsonSerializer serializer = new JsonSerializer();
                 serializer.Formatting = Formatting.Indented;
-                serializer.Serialize(streamWriter, rootJsonObject);
+                serializer.Serialize(streamWriter, RootJsonObject);
             }
         }
         /// <summary>
@@ -82,8 +82,10 @@ namespace TranslationReplacer
             ReadDataFromFile();
 
             // Check all data
-            FindReferencesAndReplace(rootJsonObject);
+            FindReferencesAndReplace(RootJsonObject);
+            Console.WriteLine();
             Console.WriteLine($"Total errors in parsed document: {totalErrors}");
+            Console.WriteLine();
 
             // Save data to faile
             SaveDataToFile();
@@ -104,7 +106,7 @@ namespace TranslationReplacer
             }
             else if (treeNode.Type == JTokenType.String)
             {
-                // check if value is a reference and if its reference find and replace
+                // check if value is a reference and if it is a reference find it and replace
                 JValue currentJValue = (JValue)treeNode;
                 string currentStringValue = (string)currentJValue.Value;
 
@@ -121,9 +123,10 @@ namespace TranslationReplacer
                     
                     // finally find correct reference translation
                     string translatedValue = FindTranslationAndReplace(translationPath);
+
                     // replace reference translation
                     JValue nodeValue = (JValue)treeNode;
-                    Replace(nodeValue, translatedValue);
+                    ReplaceSimpleValue(nodeValue, translatedValue);
                 }
             }
             else
@@ -138,7 +141,7 @@ namespace TranslationReplacer
         /// </summary>
         /// <param name="sourceValue"></param>
         /// <param name="translation"></param>
-        private void Replace(JValue sourceValue, string translation)
+        private void ReplaceSimpleValue(JValue sourceValue, string translation)
         {
 #if DEBUG
             //Console.WriteLine();
@@ -161,7 +164,7 @@ namespace TranslationReplacer
         /// <param name="translation"></param>
         private string FindTranslationAndReplace(string translationPath)
         {
-            JToken selectedJToken = rootJsonObject.SelectToken(translationPath);                                        // returns token or null if doesn't exist
+            JToken selectedJToken = RootJsonObject.SelectToken(translationPath);                                        // returns token or null if doesn't exist
 
             // error case because of lack of element in tree structure
             if (selectedJToken == null)
