@@ -119,7 +119,9 @@ namespace TranslationReplacer
                         translationPath = translationPath.TrimEnd('.');
                     }
                     
+                    // finally find correct reference translation
                     string translatedValue = FindTranslationAndReplace(translationPath);
+                    // replace reference translation
                     JValue nodeValue = (JValue)treeNode;
                     Replace(nodeValue, translatedValue);
                 }
@@ -138,15 +140,19 @@ namespace TranslationReplacer
         /// <param name="translation"></param>
         private void Replace(JValue sourceValue, string translation)
         {
-            Console.WriteLine();
-
-            JToken parentBeforeTranslation = sourceValue.Parent;
-            Console.WriteLine($"Before translation: { parentBeforeTranslation}");
+#if DEBUG
+            //Console.WriteLine();
+            //JToken parentBeforeTranslation = sourceValue.Parent;
+            //Console.WriteLine($"Before translation: { parentBeforeTranslation}");
+#endif
 
             sourceValue.Value = translation;
-            Console.WriteLine($"After translation: {(JToken)sourceValue.Parent}");
 
-            Console.WriteLine();
+
+#if DEBUG
+            //Console.WriteLine($"After translation: {(JToken)sourceValue.Parent}");
+            //Console.WriteLine();
+#endif
         }
 
         /// <summary>
@@ -155,17 +161,19 @@ namespace TranslationReplacer
         /// <param name="translation"></param>
         private string FindTranslationAndReplace(string translationPath)
         {
+            JToken selectedJToken = rootJsonObject.SelectToken(translationPath);                                        // returns token or null if doesn't exist
+
             // error case because of lack of element in tree structure
-            if (rootJsonObject.SelectToken(translationPath) == null)
+            if (selectedJToken == null)
             {
                 totalErrors++;
                 Console.WriteLine("TRANSLATION NOT FOUND: " + translationPath);
                 return ("TRANSLATION NOT FOUND: " + translationPath);
             }
             // correct translation found:
-            else if (rootJsonObject.SelectToken(translationPath).Type == JTokenType.String)
+            else if (selectedJToken.Type == JTokenType.String)
             {
-                string translationFound = (string)rootJsonObject.SelectToken(translationPath);
+                string translationFound = (string)selectedJToken;
 
                 if (translationFound.StartsWith("@:"))
                 {
@@ -178,11 +186,23 @@ namespace TranslationReplacer
                 }
             }
             // error case because of wrong element type
-            else if (rootJsonObject.SelectToken(translationPath).Type == JTokenType.Object)
+            else if (selectedJToken.Type == JTokenType.Object)
             {
-                totalErrors++;
-                Console.WriteLine("ERROR(path indicates at object), TRANSLATION NOT FOUND : " + translationPath);
-                return ("TRANSLATION NOT FOUND: " + translationPath);
+                if (selectedJToken.HasValues)
+                {
+                    // prepare new path for repeated key feature
+                    string[] tmpFullElementPath = translationPath.Split('.');
+                    string lastElement = tmpFullElementPath[tmpFullElementPath.Length - 1];
+                    string recursiveTranslationPath = $"{translationPath}.{lastElement}";
+
+                    return FindTranslationAndReplace(recursiveTranslationPath);                                         // return shortcut value or not found if not exists
+                }
+                else
+                {
+                    totalErrors++;
+                    Console.WriteLine("ERROR(path indicates at object), TRANSLATION NOT FOUND : " + translationPath);
+                    return ("TRANSLATION NOT FOUND: " + translationPath);
+                }
             }
             // other error case
             else

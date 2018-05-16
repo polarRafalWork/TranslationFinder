@@ -398,7 +398,7 @@
           "TERMS": "Vertrags-Eckdaten",
           "VALUES": "Werte",
           "DESCRIPTION": "Dienstleistung",
-          "CUSTOMER_TYPE": "TRANSLATION NOT FOUND: CCV.DETAILS.CUSTOMER.CUSTOMER_TYPE",
+          "CUSTOMER_TYPE": "Kundentyp",
           "CONTRACT_TYPE": "Vertrag",
           "CONTRACT_SUBTYPE": "Vertragsart",
           "CONTRACT_NUMBER": "Vertragsnummer",
@@ -498,7 +498,7 @@
         "OWNERS_HISTORY": {
           "OWNERS_HISTORY_BTN": "Kundenhistorie des Fahrzeugs",
           "CUSTOMER": "Kunde",
-          "CUSTOMER_TYPE": "TRANSLATION NOT FOUND: CCV.DETAILS.CUSTOMER.CUSTOMER_TYPE",
+          "CUSTOMER_TYPE": "Kundentyp",
           "CONTRACT": "Vertragsart",
           "HOLDING_PERIOD_FROM": "TRANSLATION NOT FOUND: CCV.DETAILS.CUSTOMER.VEHICLE_HISTORY.HOLDING_PERIOD_FROM",
           "HOLDING_PERIOD_TO": "TRANSLATION NOT FOUND: CCV.DETAILS.CUSTOMER.VEHICLE_HISTORY.HOLDING_PERIOD_TO"
@@ -961,7 +961,7 @@
       "CONTRACTMILEAGE": "Vertragslaufleistung",
       "CONTRACTHOLDINGPERIOD": "Haltedauer",
       "CONTRACTMILEAGEPERYEAR": "Vertragslaufleistung p.a.",
-      "CUSTOMERTYPEID": "TRANSLATION NOT FOUND: CCV.DETAILS.CUSTOMER.CUSTOMER_TYPE",
+      "CUSTOMERTYPEID": "Kundentyp",
       "CUSTOMERSTREET": "Adresse",
       "CUSTOMEREMAIL": "E-Mail",
       "CUSTOMEREMAILBUSINESS": "Geschäftliche E-Mail",
