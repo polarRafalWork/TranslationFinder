@@ -7,24 +7,33 @@ using System.IO;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Reflection;
+using System.Diagnostics;
 
 namespace TranslationReplacer
 {
+    /// <summary>
+    /// Class finds all references "@:" in .json file and replace it
+    /// </summary>
     class Translator
     {
+        // FIELDS AND PROPERTIES
         public string SourceFilePath { get; private set; }
         public string OutputFilePath { get; private set; }
         public JToken rootJsonObject { get; private set; }
-        public JContainer jsonContainer { get; set; }
+        int totalErrors = 0;
 
+        // CONSTRUCTORS
         public Translator(string sourceFilePath, string outputFilePath)
         {
             SourceFilePath = sourceFilePath;
             OutputFilePath = outputFilePath;
         }
 
+        // METHODS
 
-
+        /// <summary>
+        /// Reads data from file .json
+        /// </summary>
         private void ReadDataFromFile()
         {
             if (File.Exists(SourceFilePath) == false)
@@ -33,60 +42,36 @@ namespace TranslationReplacer
             }
             try
             {
-                //using (StreamReader streamReader = new StreamReader(SourceFilePath))
-                //{
-                //    string jsonInputString = streamReader.ReadToEnd();
-                //    jsonObject = (JObject)JsonConvert.DeserializeObject(jsonInputString);
-                //}
-
                 using (StreamReader streamReader = File.OpenText(SourceFilePath))
                 {
                     rootJsonObject = JToken.ReadFrom(new JsonTextReader(streamReader));
                 }
-
             }
             catch (IOException ex)
             {
-                Console.WriteLine("IO error");
+                Console.WriteLine("IO exception error");
                 Console.WriteLine(ex.StackTrace);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Exception found");
+                Console.WriteLine("Exception found " + ex.Message);
                 Console.WriteLine(ex.StackTrace);
             }
         }
 
-        private void SaveDataToFile(string outputFilePath)
+        private void SaveDataToFile()
         {
-            OutputFilePath = outputFilePath;
 
-#if DEBUG
             using (StreamWriter streamWriter = File.CreateText(OutputFilePath))
             {
+                if (File.Exists(OutputFilePath))
+                {
+                    Console.WriteLine("File overriden.");
+                }
                 JsonSerializer serializer = new JsonSerializer();
+                serializer.Formatting = Formatting.Indented;
                 serializer.Serialize(streamWriter, rootJsonObject);
             }
-#elif !DEBUG
-            int numberOfFileVersion = 1;
-            while (File.Exists(OutputFilePath))
-            {
-                OutputFilePath += numberOfFileVersion.ToString();
-                numberOfFileVersion++;
-            }
-
-            Console.WriteLine("##############################################################################################################################");
-            Console.WriteLine("JSON AFTER TRANSLATION");
-            Console.WriteLine("##############################################################################################################################");
-            Console.WriteLine(jsonObject);
-
-
-            using (StreamWriter streamWriter = File.CreateText(OutputFilePath))
-            {
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Serialize(streamWriter, jsonObject);
-            }
-#endif
         }
         /// <summary>
         /// Read, translate references and save file
@@ -98,11 +83,11 @@ namespace TranslationReplacer
 
             // Check all data
             FindReferencesAndReplace(rootJsonObject);
+            Console.WriteLine($"Total errors in parsed document: {totalErrors}");
 
             // Save data to faile
-            SaveDataToFile(OutputFilePath);
+            SaveDataToFile();
         }
-
 
         /// <summary>
         /// Finds references and repleace all which need to be changed
@@ -117,17 +102,26 @@ namespace TranslationReplacer
                     FindReferencesAndReplace(child.Value);
                 }
             }
-            else if (treeNode.Type == JTokenType.String)  // czy zawsze będą tylko stringi?
+            else if (treeNode.Type == JTokenType.String)
             {
                 // check if value is a reference and if its reference find and replace
                 JValue currentJValue = (JValue)treeNode;
                 string currentStringValue = (string)currentJValue.Value;
 
-                if (currentStringValue.StartsWith("@:"))
+                if (currentStringValue.StartsWith("@:"))                                                    // check if it is an reference starting with "@:"
                 {
-                    Console.WriteLine(currentStringValue);
-                    string translationPath = currentStringValue.Substring(2);
-                    Translation(translationPath);
+                    string translationPath = currentStringValue.Substring(2);                               // remove "@:" from beggining of string to let JSON tree to parse this string directly
+
+                    if (translationPath[translationPath.Length-1]=='.')                                     // check if there is unnecessary "." at the end of node chain
+                    {
+                        totalErrors++;
+                        Console.WriteLine("UNNECESSARY DOT SIGN AT THE END OF PATH: " + translationPath);
+                        translationPath = translationPath.TrimEnd('.');
+                    }
+                    
+                    string translatedValue = FindTranslationAndReplace(translationPath);
+                    JValue nodeValue = (JValue)treeNode;
+                    Replace(nodeValue, translatedValue);
                 }
             }
             else
@@ -138,15 +132,65 @@ namespace TranslationReplacer
         }
 
         /// <summary>
-        /// Finds translation in a tree and return it
+        /// Replaces value in leaf
+        /// </summary>
+        /// <param name="sourceValue"></param>
+        /// <param name="translation"></param>
+        private void Replace(JValue sourceValue, string translation)
+        {
+            Console.WriteLine();
+
+            JToken parentBeforeTranslation = sourceValue.Parent;
+            Console.WriteLine($"Before translation: { parentBeforeTranslation}");
+
+            sourceValue.Value = translation;
+            Console.WriteLine($"After translation: {(JToken)sourceValue.Parent}");
+
+            Console.WriteLine();
+        }
+
+        /// <summary>
+        /// Finds translation in a tree and return it as a string
         /// </summary>
         /// <param name="translation"></param>
-        private string Translation(string translation)
+        private string FindTranslationAndReplace(string translationPath)
         {
-            string result = "";
+            // error case because of lack of element in tree structure
+            if (rootJsonObject.SelectToken(translationPath) == null)
+            {
+                totalErrors++;
+                Console.WriteLine("TRANSLATION NOT FOUND: " + translationPath);
+                return ("TRANSLATION NOT FOUND: " + translationPath);
+            }
+            // correct translation found:
+            else if (rootJsonObject.SelectToken(translationPath).Type == JTokenType.String)
+            {
+                string translationFound = (string)rootJsonObject.SelectToken(translationPath);
 
-
-            return result;
+                if (translationFound.StartsWith("@:"))
+                {
+                    string recursiveTranslationPath = translationFound.Substring(2);
+                    return FindTranslationAndReplace(recursiveTranslationPath);
+                }
+                else
+                {
+                    return translationFound;
+                }
+            }
+            // error case because of wrong element type
+            else if (rootJsonObject.SelectToken(translationPath).Type == JTokenType.Object)
+            {
+                totalErrors++;
+                Console.WriteLine("ERROR(path indicates at object), TRANSLATION NOT FOUND : " + translationPath);
+                return ("TRANSLATION NOT FOUND: " + translationPath);
+            }
+            // other error case
+            else
+            {
+                totalErrors++;
+                Console.WriteLine("ERROR, TRANSLATION NOT FOUND: " + translationPath);
+                return ("TRANSLATION NOT FOUND: " + translationPath);
+            }
         }
     }
 }
