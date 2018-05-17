@@ -61,13 +61,16 @@ namespace TranslationReplacer
 
         private void SaveDataToFile()
         {
-
+            if (File.Exists(OutputFilePath))
+            {
+                Console.WriteLine("File overriden.");
+            }
+            else
+            {
+                Console.WriteLine("New file created.");
+            }
             using (StreamWriter streamWriter = File.CreateText(OutputFilePath))
             {
-                if (File.Exists(OutputFilePath))
-                {
-                    Console.WriteLine("File overriden.");
-                }
                 JsonSerializer serializer = new JsonSerializer();
                 serializer.Formatting = Formatting.Indented;
                 serializer.Serialize(streamWriter, RootJsonObject);

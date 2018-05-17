@@ -15,21 +15,22 @@ namespace TranslationReplacer
 #if !DEBUG
             if(args.Length == 2)
             {
-                System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
-                stopwatch.Start();
+                //System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+                //stopwatch.Start();
 
                 string fileSourcePath = args[0];
                 string fileOutputPath = args[1];
                 Translator translator = new Translator(fileSourcePath, fileOutputPath);
+                Console.WriteLine();
                 translator.TranslateData();
 
-                stopwatch.Stop();
-                long ticksNumber = stopwatch.ElapsedTicks;
-                long elapsedTime = stopwatch.ElapsedMilliseconds;
+                //stopwatch.Stop();
+                //long ticksNumber = stopwatch.ElapsedTicks;
+                //long elapsedTime = stopwatch.ElapsedMilliseconds;
 
-                Console.WriteLine();
-                Console.WriteLine($"Total ticks number: {ticksNumber}");
-                Console.WriteLine($"Elapsed time (ms): {elapsedTime}");
+                //Console.WriteLine();
+                //Console.WriteLine($"Total ticks number: {ticksNumber}");
+                //Console.WriteLine($"Elapsed time (ms): {elapsedTime}");
                 Console.WriteLine();
 
             }
